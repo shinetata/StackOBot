@@ -12,3 +12,5 @@
 | 2026-01-12 12:41:59 | 新增 UnrealCSharp 运行时线程模型文档 | docs,unrealcsharp,threading | `docs/tech/unrealcsharp-runtime-threading-model.md` | 目视检查关键代码引用与 Mermaid 语法 | `task_record/code_change_task_20260112_124159.md` |
 | 2026-01-12 14:57:23 | 新增 UnrealCSharp 运行时执行流程图文档 | docs,unrealcsharp,flow | `docs/tech/unrealcsharp-runtime-execution-flow.md` | 目视检查关键入口函数与流程一致 | `task_record/code_change_task_20260112_145723.md` |
 | 2026-01-12 15:21:23 | 按 ASCII 规范优化运行时执行流程图 | docs,unrealcsharp,diagram,flow | `docs/tech/unrealcsharp-runtime-execution-flow.md` | 目视检查 ASCII 框图对齐与无 Mermaid；`Select-String` 检索关键切入点 | `task_record/code_change_task_20260112_152123.md` |
+| 2026-01-12 17:14:39 | 沉淀 TaskGraph 并行执行纯 C# 计算讨论文档 | docs,unrealcsharp,taskgraph,parallel | `docs/tech/unrealcsharp-taskgraph-parallel-csharp.md` | 目视检查 ASCII 图、伪代码段与路径引用 | `task_record/code_change_task_20260112_171439.md` |
+| 2026-01-12 18:10:55 | 明确 chunk 切分由 C# SDK 层封装 | docs,unrealcsharp,taskgraph,parallel,chunking | `docs/tech/unrealcsharp-taskgraph-parallel-csharp.md` | 目视检查：示例与接口草案统一使用 `ParallelFor` | `task_record/code_change_task_20260112_181055.md` |
