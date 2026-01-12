@@ -1,6 +1,7 @@
 ﻿using System;
 using Script.CoreUObject;
 using Script.Engine;
+using Script.Game.StackOBot.Blueprints.Character;
 using Script.Game.StackOBot.Blueprints.GameElements;
 
 namespace Script.Game.StackOBot.Blueprints.Framework
@@ -24,6 +25,7 @@ namespace Script.Game.StackOBot.Blueprints.Framework
         [Override]
         public override void ReceiveBeginPlay()
         {
+            SpawnBotsGrid(100, 10, 0f);
             // (UGameplayStatics.GetGameInstance(this) as IBPI_GameInstance_C)?.InitSaveGame();
         }
 
@@ -34,6 +36,7 @@ namespace Script.Game.StackOBot.Blueprints.Framework
         public void SpawnPlayerAtActiveSpawnPad()
         {
             StartingNewPlayer();
+            SpawnBotsGrid(100, 10, 0f);
         }
 
         /*
@@ -181,6 +184,36 @@ namespace Script.Game.StackOBot.Blueprints.Framework
             else
             {
                 Success = false;
+            }
+        }
+        
+        private void SpawnBotsGrid(int count, int columns, float spacing)
+        {
+            var world = GetWorld();
+            if (world == null) return;
+
+            var origin = K2_GetActorLocation(); // 以 GameMode 位置为起点，也可改成 SpawnPad 位置
+
+            for (int i = 0; i < count; i++)
+            {
+                int row = i / columns;
+                int col = i % columns;
+
+                var location = origin + new FVector
+                {
+                    X = col * spacing,
+                    Y = row * spacing,
+                    Z = 0.0f
+                };
+
+                var transform = new FTransform(location);
+
+                var bot = world.SpawnActor<BP_Bot_C>(transform, new FActorSpawnParameters
+                {
+                    SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod.AdjustIfPossibleButAlwaysSpawn
+                });
+
+                bot?.SetBotIdx(i);
             }
         }
 
