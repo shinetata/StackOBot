@@ -9,3 +9,6 @@
 | 2026-01-12 10:47:09 | 为 UnrealCSharp 新手文档补充架构图与流程图 | docs,unrealcsharp,diagram | `docs/tech/unrealcsharp-ue-interaction-beginner-guide.md` | 目视检查 Mermaid 语法与关键路径/函数标注 | `task_record/code_change_task_20260112_104709.md` |
 | 2026-01-12 10:56:46 | 修复 Mermaid 架构图渲染错误 | docs,unrealcsharp,diagram | `docs/tech/unrealcsharp-ue-interaction-beginner-guide.md` | Mermaid 语法检查（避免转义引号） | `task_record/code_change_task_20260112_105646.md` |
 | 2026-01-12 11:47:49 | 补充 C#-First（Unity-like）交互细节章节 | docs,unrealcsharp,csharp-first | `docs/tech/unrealcsharp-ue-interaction-beginner-guide.md` | 目视检查术语一致性与引用示例 | `task_record/code_change_task_20260112_114749.md` |
+| 2026-01-12 12:41:59 | 新增 UnrealCSharp 运行时线程模型文档 | docs,unrealcsharp,threading | `docs/tech/unrealcsharp-runtime-threading-model.md` | 目视检查关键代码引用与 Mermaid 语法 | `task_record/code_change_task_20260112_124159.md` |
+| 2026-01-12 14:57:23 | 新增 UnrealCSharp 运行时执行流程图文档 | docs,unrealcsharp,flow | `docs/tech/unrealcsharp-runtime-execution-flow.md` | 目视检查关键入口函数与流程一致 | `task_record/code_change_task_20260112_145723.md` |
+| 2026-01-12 15:21:23 | 按 ASCII 规范优化运行时执行流程图 | docs,unrealcsharp,diagram,flow | `docs/tech/unrealcsharp-runtime-execution-flow.md` | 目视检查 ASCII 框图对齐与无 Mermaid；`Select-String` 检索关键切入点 | `task_record/code_change_task_20260112_152123.md` |

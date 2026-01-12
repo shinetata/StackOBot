@@ -16,10 +16,78 @@
 
 ## 基本原则
 1. 使用中文进行对话，编写文档时使用UTF-8编码，严禁乱码
-2. 严谨自行回滚或提交git，若有需求，需向用户确认
+2. 严禁自行回滚或提交git，若有需求，需向用户确认
 3. 当用户提出类似“总结方案”之类的要求时，禁止直接改代码或其他内容，优先将方案总结进'docs/tech'目录下（没有则新建目录）
 4. `Plugins/UnrealCSharp`目录是UE5的一个插件，其提供了使用C#编写UE5脚本的能力，该工程是基于该插件的UE5工程示例，用于学习和研究该插件和UE5的交互机制。
 5. 本工程的改动大部分在`Plugins/UnrealCSharp`目录下，除非有明确的指令，否则不要直接动其他部分的代码。
+6. 涉及到绘制架构图、流程图等要求，优先使用纯ASCII框图。需要使用线框来清晰地展示层次结构，使用箭头展示逻辑、流程朝向，参考格式如下：
+
+参考1：
+
+```
++----------------------+         +----------------------+
+| IQuery<T...>         |         | IQuery<T...>          |
+|  ParallelForEach     |         |  ScheduleParallel     |
++----------+-----------+         +-----------+-----------+
+           |                                   |
+           v                                   v
++----------------------+         +-----------------------+
+| ParallelManager      |         | ParallelManager       |
+| ExecuteTasks         |         | ExecuteTasksAsync      |
+| (阻塞)               |         | (非阻塞)               |
++----------+-----------+         +-----------+-----------+
+           |                                   |
+           v                                   v
++----------------------+         +-----------------------+
+| RunnerPool           |         | AsyncRunnerPool        |
+| taskCount -> runner  |         | taskCount -> runners   |
++----------+-----------+         +-----------+-----------+
+           |                                   |
+           v                                   v
++----------------------+         +-----------------------+
+| ParallelRunner       |         | ParallelRunner         |
+| tasks[]              |         | tasks[]                |
+| currentHandle        |         | currentHandle          |
++----------+-----------+         +-----------+-----------+
+           |                                   |
+           v                                   v
++----------------------+         +-----------------------+
+| Worker Threads        |         | Worker Threads         |
+| index -> tasks[index] |         | index -> tasks[index]  |
++----------------------+         +-----------------------+
+```
+参考2：
+
+```
+主线程 (ISystem.OnUpdate)                     Worker 线程 (Job 执行)
+┌────────────────────────────────────────┐   ┌─────────────────────────────┐
+│ CollisionSystem.OnUpdate               │   │ JobEvB(碰撞) 执行中...        │
+│  jobEvB = ScheduleParallel(dep0)       │   │  读 LocalTransform           │
+│  jobPvE = ScheduleParallel(dep1)       │   │  写 Health                   │
+│  state.Dependency = dep2               │   │ JobPvE(碰撞) 执行中...        │
+├────────────────────────────────────────┤   │  读 LocalTransform           │
+│ MoveForwardSystem.OnUpdate             │   │  写 Health                   │
+│  jobMove = ScheduleParallel(depX)      ├──▶│ JobMove(移动) 执行中...        │
+│  state.Dependency = depY               │   │  写 LocalTransform           │
+├────────────────────────────────────────┤   │ JobTurn(转向) 执行中...        │
+│ TurnTowardsPlayerSystem.OnUpdate       │   │  写 LocalTransform           │
+│  jobTurn = ScheduleParallel(depY)      ├──▶│                             │
+│  state.Dependency = depZ               │   └─────────────────────────────┘
+├────────────────────────────────────────┤
+│ RemoveDeadSystem.OnUpdate              │
+│  CompleteDependencyBeforeRO<Health>()  │  同步点：等待所有写 Health 的 Job
+│  foreach Health (主线程)               │
+│  ECB Playback                          │
+├────────────────────────────────────────┤
+│ TimedDestroySystem.OnUpdate            │
+│  CompleteDependencyBeforeRW<TimeToLive>() 同步点：等待写 TimeToLive 的 Job
+│  foreach TimeToLive (主线程)           │
+│  ECB Playback                          │
+└────────────────────────────────────────┘
+```
+
+7. 涉及UE5引擎相关的知识，可以通过查阅网络公开信息、官方文档等方式来交叉验证准确性，务必保证回复的准确性。若无法查到这部分内容或内容比较过时，要明确回复内容无公开证据支持或不一定准确等，严禁产生误导
+
 
 ## 工程基本信息（StackOBot）
 - 工程类型：UE5 项目 + UnrealCSharp 插件集成示例（C# 脚本驱动能力）。
