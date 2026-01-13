@@ -4,6 +4,13 @@
 
 补充约束（很关键）：PGD_Core 的 `ParallelJob` 模块里，`ParallelManager/ParallelRunner/IParallelTask/JobHandle` 等类型大多是 **internal**。因此 UnrealCSharp 的 Extension 层无法直接复用这些实现；本文把它们当作“语义参考/性能策略参考”，而 UE 侧需要**重建一套对外可用的调度管理层**（以 public API + 生成代码信息为输入），最终仍然落到“执行一批任务”的 TaskGraph 后端。
 
+## 本机路径（新对话上下文约定）
+
+- PGD 工程根目录：`C:\WorkSpace\GitHub\PGDCS`
+- 重点目录（高性能 ECS 框架）：`C:\WorkSpace\GitHub\PGDCS\PGD_Core`
+- ParallelJob 参考实现：`C:\WorkSpace\GitHub\PGDCS\PGD_Core\src\Extensions\ParallelJob`
+- Query 生成代码（切分策略来源）：`C:\WorkSpace\GitHub\PGDCS\PGD_Core\src\Query\Generated`
+
 ---
 
 ## 1) PGD ParallelJob：你真正要迁移的是什么
@@ -130,7 +137,113 @@ TaskGraph worker 是 native 线程，要在 worker 上执行托管逻辑必须�
 
 ---
 
-## 5) Span 需求下的切分位置：仍在 C# 做，但“传索引，不传 Span”
+## 5) 非阻塞式批次执行（TaskGraph 后端方案草案，后续以本节为准）
+
+当前仓库里 `TaskGraphBatch.ExecuteBatch(...)` 是阻塞式（`wait=true`）：调用线程会同步等待批次全部完成，然后立刻释放 `GCHandle`。
+
+非阻塞（`wait=false`）不能直接“把 wait 改成 false”，否则 C# 在 internal call 返回后会立刻 `handle.Free()`，但 TaskGraph worker 仍会继续回调 `ExecuteTask(handle, index)`，导致 handle 失效（轻则异常，重则未定义行为）。
+
+### 5.1 目标语义（建议）
+
+- `ExecuteBatchAsync(...)`：dispatch 立即返回一个可等待对象（建议 `Task`/`ValueTask` 或自定义 handle）。
+- `GCHandle` 生命周期延续到“所有 worker 任务完成后”，由 **completion 回调**释放。
+- 异常不穿透到 native（避免 `Unhandled_Exception`），而是在托管侧捕获并聚合后设置到返回的 `Task`。
+
+### 5.2 最小可落地实现：TaskGraph prerequisites + Completion Task
+
+核心点：仍然 dispatch `N` 个 worker task，但不在 C++ 里 `WaitUntilTasksComplete`；改为再 dispatch 一个 “Completion Task”，它依赖于前面 `N` 个 task 的 GraphEvent（Prerequisites）。Completion Task 触发一次托管回调 `Complete(handle)`：
+
+```
++------------------------------+
+| C# ExecuteBatchAsync(...)     |
+| - state{ExecuteIndex,TCS,Ex}  |
+| - GCHandle.Alloc(state)       |
+| - internal call ExecuteBatch  |
+| - return state.Task           |
++---------------+--------------+
+                |
+                v
++------------------------------+
+| C++ ExecuteBatch(wait=false)  |
+| - dispatch N worker tasks      |
+| - events[] = GraphEventRef     |
+| - dispatch completion task     |
+|   prereqs = events[]           |
++---------------+--------------+
+                |
+                v
++------------------------------+
+| TaskGraph Worker (task i)     |
+| - EnsureThreadAttached()      |
+| - Runtime_Invoke ExecuteTask  |
+|   -> C# try/catch 记录异常     |
++---------------+--------------+
+                |
+                v
++------------------------------+
+| TaskGraph Worker (completion) |
+| - EnsureThreadAttached()      |
+| - Runtime_Invoke Complete     |
+|   -> tcs.SetResult/SetException|
+|   -> GCHandle.Free(handle)     |
++------------------------------+
+```
+
+### 5.3 托管侧伪代码（强调异常聚合 + handle 释放时机）
+
+```
+public static Task ExecuteBatchAsync(Action<int> executeIndex, int taskCount)
+{
+    var state = new BatchState
+    {
+        ExecuteIndex = executeIndex,
+        Tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously),
+        Exceptions = new ConcurrentQueue<Exception>()
+    };
+
+    var handle = GCHandle.Alloc(state);
+    state.Handle = handle;
+
+    // native：dispatch N 个 task + completion task（不等待）
+    FTaskGraph.ExecuteBatch(GCHandle.ToIntPtr(handle), taskCount, wait:false);
+
+    return state.Tcs.Task;
+}
+
+// 被 worker 调用 N 次
+public static void ExecuteTask(nint stateHandle, int index)
+{
+    var state = (BatchState)GCHandle.FromIntPtr((IntPtr)stateHandle).Target!;
+
+    try { state.ExecuteIndex(index); }
+    catch (Exception ex) { state.Exceptions.Enqueue(ex); }
+}
+
+// 被 completion task 调用 1 次
+public static void Complete(nint stateHandle)
+{
+    var handle = GCHandle.FromIntPtr((IntPtr)stateHandle);
+    var state = (BatchState)handle.Target!;
+
+    if (state.Exceptions.TryDequeue(out var ex)) state.Tcs.TrySetException(ex);
+    else state.Tcs.TrySetResult(null);
+
+    handle.Free(); // 关键：由 completion 释放
+}
+```
+
+### 5.4 “回到 GT”怎么做（可选）
+
+非阻塞式通常还需要一个约束：**任何 UE API 调用必须回到 GT**。
+
+两种最小策略：
+
+1) completion task 仍然在 worker 上触发 `Complete`，而 `await` 的 continuation 在 GT 上通过 `SynchronizationContext` 回到 GT（要求 await 点在 GT）。
+2) completion task 直接安排到 GT：把 completion task 的线程指定为 `ENamedThreads::GameThread`，在 GT 执行 `Complete`（注意：这会把“完成回调”放到 GT，不能做重活，只做 signal/切换）。
+
+---
+
+## 6) Span 需求下的切分位置：仍在 C# 做，但“传索引，不传 Span”
 
 PGD 的 Query 实现里本来就大量使用 `Span<T>`/`ref`（例如 `components1[n]` 是连续内存访问）。
 
@@ -165,7 +278,7 @@ for (int i = 0; i < span.Length; i++)
 
 ---
 
-## 6) 最小落地顺序（建议）
+## 7) 最小落地顺序（建议）
 
 1) **保持 PGD 的切分策略不变**（chunkCount/taskCount/sectionSize）。
 2) 先在 StackOBot 里把 TaskGraph 后端跑通“执行批次 tasks[]”：

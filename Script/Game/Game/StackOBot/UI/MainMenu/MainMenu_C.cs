@@ -33,7 +33,7 @@ namespace Script.Game.StackOBot.UI.MainMenu
             {
                 Console.WriteLine($"[Batch] i={i} nativeTid=" +
                                   $"{TaskGraphBatch.GetCurrentNativeThreadId()} " +
-                                  $"managedTid={System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                                  $"managedTid={Thread.CurrentThread.ManagedThreadId}");
             }, taskCount: 8);
             Console.WriteLine("After task hello by console ==================================");
             var OutActors = new TArray<AActor>();

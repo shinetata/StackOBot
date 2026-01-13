@@ -51,11 +51,7 @@
 - C++ internal call：`Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTaskGraph.cpp`
   - `FTaskGraph_EnqueueProbeImplementation(int token)`：投递 `FFunctionGraphTask` 到 `ENamedThreads::AnyBackgroundThreadNormalTask`
   - worker 内：
-<<<<<<< HEAD
     - `FMonoDomain::EnsureThreadAttached()`（确保 worker 线程可进入 Mono）
-=======
-    - `mono_thread_attach(FMonoDomain::Domain)`（确保 worker 线程可进入 Mono）
->>>>>>> e01fd5e8c7c8b313fabcaf17e1667522c717daa4
     - `FMonoDomain::Runtime_Invoke(...)` 调用 `Script.Library.TaskGraphProbe.OnWorker(...)`
 - C# probe：`Plugins/UnrealCSharp/Script/UE/Library/TaskGraphProbe.cs`
   - `TaskGraphProbe.Enqueue(int token)`：从 C# 侧触发投递
@@ -154,7 +150,7 @@ UE TaskGraph worker 是 native 线程。要在这个线程里调用 `mono_runtim
 
 这一步决定了“可不可靠/会不会随机崩”，而不是 TaskGraph API 本身。
 
-> 备注：当前仓库代码里没有看到现成的 `EnsureThreadAttached()` 封装；要做该方案，需要补齐这一层（并且要考虑 worker 线程通常是长生命周期线程，建议每线程 attach 一次，而不是每个任务 attach/detach）。
+> 备注：本仓库已补齐 `FMonoDomain::EnsureThreadAttached()`（内部用 `mono_thread_current()` 做保护，避免 TaskGraph worker 复用场景下重复 attach 触发 cooperative GC 断言）。
 
 ---
 
@@ -210,6 +206,9 @@ UE TaskGraph worker 是 native 线程。要在这个线程里调用 `mono_runtim
 - `Plugins/UnrealCSharp/Script/UE/CoreUObject/SynchronizationContext.cs`
 
 ---
+
+补充：非阻塞式（dispatch 立即返回）的完整方案与生命周期细节，统一沉淀在：
+- `docs/tech/pgd-paralleljob-to-ue-taskgraph-mapping.md`
 
 ## 5) 典型用法：连续内存（10000 struct）并行遍历
 
