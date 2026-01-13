@@ -18,6 +18,36 @@
 - C# 产物输出目录（默认）：`Content/Script/`
   - 你会在这里看到类似 `UE.dll`、`Game.dll` 的程序集（可再生成，通常不提交版本库）
 
+## C# 如何把日志打到 UE Output Log
+
+在本仓库（UnrealCSharp）里，C# 侧常用的日志路径有三种。它们都能写进 Output Log，但各自的稳定性/用途不同：
+
+1) **优先推荐：直接调用 UE API（稳定）**
+
+```csharp
+UKismetSystemLibrary.PrintString(
+    this,
+    "Hello Output Log",
+    bPrintToScreen: false,
+    bPrintToLog: true);
+```
+
+2) **`Console.WriteLine`（依赖 Console 重定向）**
+
+```csharp
+Console.WriteLine("hello by console");
+```
+
+3) **直接调用 UnrealCSharp 的日志 internal call（更底层）**
+
+```csharp
+Script.Library.LogImplementation.Log_LogImplementation(
+    "hello by LogImplementation".ToCharArray(),
+    0);
+```
+
+如果你确认代码执行了但 Output Log 搜不到，优先检查 Output Log 的过滤器（Category/Verbosity/文本过滤）是否把 `LogUnrealCSharp` 或对应级别过滤掉了。
+
 ## 一张图看懂“编辑器生成链路”和“运行时调用链路”
 
 > 说明：下图使用 Mermaid 语法。若你的 Markdown 阅读器不渲染 Mermaid，可把内容复制到支持 Mermaid 的预览器（例如 VS Code + Mermaid 插件、或在线 Mermaid Live Editor）查看。
