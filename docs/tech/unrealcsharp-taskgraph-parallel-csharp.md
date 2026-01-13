@@ -44,6 +44,50 @@
 
 因此，如果要实现“C# 把重活交给 TaskGraph”，需要新增一个桥接层（internal call + 托管包装）。
 
+### 2.3 最小验证 PoC：证明“TaskGraph worker 能执行 C#”
+
+本仓库补齐了一个最小 probe，用来验证“Native 子线程（TaskGraph worker）可以调度并执行 C# 代码”：
+
+- C++ internal call：`Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTaskGraph.cpp`
+  - `FTaskGraph_EnqueueProbeImplementation(int token)`：投递 `FFunctionGraphTask` 到 `ENamedThreads::AnyBackgroundThreadNormalTask`
+  - worker 内：
+    - `mono_thread_attach(FMonoDomain::Domain)`（确保 worker 线程可进入 Mono）
+    - `FMonoDomain::Runtime_Invoke(...)` 调用 `Script.Library.TaskGraphProbe.OnWorker(...)`
+- C# probe：`Plugins/UnrealCSharp/Script/UE/Library/TaskGraphProbe.cs`
+  - `TaskGraphProbe.Enqueue(int token)`：从 C# 侧触发投递
+  - `TaskGraphProbe.OnWorker(...)`：在 worker 线程执行，`Console.WriteLine` 输出线程信息
+
+注意：internal call 的 extern 声明需要遵循 UnrealCSharp 绑定命名约定（`F<Class>Implementation`），本 PoC 的 extern 位于：
+- `Plugins/UnrealCSharp/Script/UE/Library/FTaskGraphImplementation.cs`
+
+验证方式（手动）：
+
+1) 在任意会在运行时执行的 C# 入口（例如某个 `BeginPlay`/初始化逻辑）调用：
+   - `Script.Library.TaskGraphProbe.Enqueue(123);`
+2) 在 UnrealEditor 的 Output Log 中搜索：
+   - `[TaskGraphProbe] token=123 ... GT=... Worker=...`
+3) 确认 `GT` 与 `Worker` 的 native thread id 不相同，即证明“TaskGraph worker 线程执行了托管代码”。
+
+#### 2.3.1 场景扩展：主线程创建连续内存，worker 遍历并修改
+
+不考虑主线程 wait/竞争等因素时，你可以用 `int[]` 做一个“主线程创建 → worker 线程修改”的最小验证：
+
+1) 在主线程（例如 `BeginPlay`）创建连续内存并赋值：
+
+```csharp
+Script.Library.TaskGraphProbe.MainThreadCreateSharedInt32(10000);
+```
+
+2) 投递到 TaskGraph worker：
+
+```csharp
+Script.Library.TaskGraphProbe.Enqueue(123);
+```
+
+3) 观察 Output Log：除了线程信息外，还会有一条 “SharedInt32 processed” 日志，包含长度、修改前后 checksum 与首尾元素值：
+
+- 预期：`first=0`，`last=19998`（因为原来是 9999，处理后乘 2）
+
 ---
 
 ## 3) 核心问题：TaskGraph worker 怎么执行 C#？

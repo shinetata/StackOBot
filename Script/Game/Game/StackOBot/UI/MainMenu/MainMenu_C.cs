@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Script.CoreUObject;
@@ -25,6 +26,9 @@ namespace Script.Game.StackOBot.UI.MainMenu
         [Override]
         public override void ReceiveBeginPlay()
         {
+            Console.WriteLine("hello by console ==================================");
+            Script.Library.TaskGraphProbe.MainThreadCreateSharedInt32(10000);
+            Script.Library.TaskGraphProbe.Enqueue(123);
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
