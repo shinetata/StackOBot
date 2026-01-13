@@ -26,16 +26,8 @@ namespace Script.Game.StackOBot.UI.MainMenu
         [Override]
         public override void ReceiveBeginPlay()
         {
-            Console.WriteLine("hello by console ==================================");
-            TaskGraphProbe.MainThreadCreateSharedInt32(10000);
-            TaskGraphProbe.Enqueue(123);
-            TaskGraphBatch.ExecuteBatch(i =>
-            {
-                Console.WriteLine($"[Batch] i={i} nativeTid=" +
-                                  $"{TaskGraphBatch.GetCurrentNativeThreadId()} " +
-                                  $"managedTid={Thread.CurrentThread.ManagedThreadId}");
-            }, taskCount: 8);
-            Console.WriteLine("After task hello by console ==================================");
+            TaskGraphPerfComparison.Run(length: 10000, taskCount: 8, queryCount: 5, iterations: 1024, warmup: 3);
+            Console.WriteLine("=================TaskGraphPerf Finished=========================");
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
