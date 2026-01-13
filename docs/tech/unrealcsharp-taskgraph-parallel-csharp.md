@@ -51,7 +51,11 @@
 - C++ internal call：`Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTaskGraph.cpp`
   - `FTaskGraph_EnqueueProbeImplementation(int token)`：投递 `FFunctionGraphTask` 到 `ENamedThreads::AnyBackgroundThreadNormalTask`
   - worker 内：
+<<<<<<< HEAD
     - `FMonoDomain::EnsureThreadAttached()`（确保 worker 线程可进入 Mono）
+=======
+    - `mono_thread_attach(FMonoDomain::Domain)`（确保 worker 线程可进入 Mono）
+>>>>>>> e01fd5e8c7c8b313fabcaf17e1667522c717daa4
     - `FMonoDomain::Runtime_Invoke(...)` 调用 `Script.Library.TaskGraphProbe.OnWorker(...)`
 - C# probe：`Plugins/UnrealCSharp/Script/UE/Library/TaskGraphProbe.cs`
   - `TaskGraphProbe.Enqueue(int token)`：从 C# 侧触发投递
