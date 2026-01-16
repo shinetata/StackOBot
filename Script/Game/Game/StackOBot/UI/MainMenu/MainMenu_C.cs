@@ -28,6 +28,7 @@ namespace Script.Game.StackOBot.UI.MainMenu
         {
             // TaskGraphPerfComparison.Run(length: 10000, taskCount: 8, queryCount: 5, iterations: 1024, warmup: 3);
             NativeBufferInternalCallDemo.RunInt32();
+            NativeBufferTaskGraphDemo.RunInt32Parallel();
             Console.WriteLine("=================TaskGraphPerf Finished=========================");
             var OutActors = new TArray<AActor>();
 
