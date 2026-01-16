@@ -113,3 +113,5 @@ Script/Game/*.csproj.*
 Script/Game/FodyWeavers.xml
 Script/Game/FodyWeavers.xsd
 Script/Game/*.props
+
+.claude/
