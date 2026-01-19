@@ -58,3 +58,4 @@
 | 2026-01-19 11:50:48 | 增加 ECS 参数扫测入口（taskCount/minChunk） | taskgraph,native,benchmark,ecs | `Plugins/UnrealCSharp/Script/UE/Library/TaskGraphVsCSharpEcsPerfRunner.cs`, `Script/Game/Game/StackOBot/UI/MainMenu/MainMenu_C.cs` | 目视检查：EcsPerfSweep 输出与组合遍历 | `task_record/code_change_task_20260119_115045.md` |
 | 2026-01-19 12:00:52 | 汇总 TaskGraph 性能验证方案与结果 | docs,taskgraph,benchmark | `docs/tech/taskgraph-performance-verification-summary.md` | 目视检查：表格与参数一致性 | `task_record/code_change_task_20260119_120048.md` |
 | 2026-01-19 12:40:38 | 完善性能验证文档方案设计与代码示例 | docs,taskgraph,benchmark | `docs/tech/taskgraph-performance-verification-summary.md` | 目视检查：新增设计说明与代码片段 | `task_record/code_change_task_20260119_124034.md` |
+| 2026-01-19 15:29:13 | PGD 对标 Unity ECS：managed/unmanaged 双存储改动点与方案清单 | docs,pgd,ecs,unity,storage | `docs/tech/pgd-align-unity-ecs-managed-unmanaged-storage.md` | 目视检查：结构、术语与对标等级清晰；引用路径存在 | `task_record/archive/2026-W04/code_change_task_20260119_152913.md` |
