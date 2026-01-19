@@ -27,9 +27,14 @@ namespace Script.Game.StackOBot.UI.MainMenu
         public override void ReceiveBeginPlay()
         {
             // TaskGraphPerfComparison.Run(length: 10000, taskCount: 8, queryCount: 5, iterations: 1024, warmup: 3);
-            NativeBufferInternalCallDemo.RunInt32();
-            NativeBufferTaskGraphDemo.RunInt32Parallel();
-            Console.WriteLine("=================TaskGraphPerf Finished=========================");
+            TaskGraphVsCSharpEcsPerfRunner.RunPosVelArchetypeCompareSweep(
+                taskCounts: new[] { 4, 8, 16 },
+                minParallelChunkSizes: new[] { 5_000, 10_000, 20_000 },
+                iterations: 32,
+                warmup: 3,
+                rounds: 5,
+                dt: 1);
+            Console.WriteLine("=================NativeKernel vs CSharpParallel Finished=========================");
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
