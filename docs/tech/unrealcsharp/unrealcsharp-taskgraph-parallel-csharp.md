@@ -208,7 +208,7 @@ UE TaskGraph worker 是 native 线程。要在这个线程里调用 `mono_runtim
 ---
 
 补充：非阻塞式（dispatch 立即返回）的完整方案与生命周期细节，统一沉淀在：
-- `docs/tech/pgd-paralleljob-to-ue-taskgraph-mapping.md`
+- `docs/tech/pgd/pgd-paralleljob-to-ue-taskgraph-mapping.md`
 
 ## 5) 典型用法：连续内存（10000 struct）并行遍历
 

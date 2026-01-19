@@ -122,6 +122,12 @@
 6. **不改生成物**：除非用户明确要求，否则不直接改 `Binaries/`、`Intermediate/`、`Saved/`、`DerivedDataCache/` 下内容。
 7. **任务记录**：只要发生文件改动，必须按本文件下方“代码生成任务记录要求”新增记录并更新索引。
 
+## 文档管理规范（强制）
+1. **统一归档位置**：技术文档统一放在 `docs/tech/` 下，并按主题放入子目录（例如 `docs/tech/unrealcsharp/`、`docs/tech/taskgraph/`、`docs/tech/pgd/`、`docs/tech/codecheck/`、`docs/tech/image/`）。
+2. **统一索引入口**：`docs/tech/index.md` 是技术文档的总索引。新增/移动/重命名/删除 `docs/tech/**` 下文档时，必须同步更新索引表。
+3. **最后修改日志**：索引中的“最后修改日志”字段尽量回溯 `task_record/index.md` 中最近一条涉及该文档的记录；无法回溯则留空。
+4. **搬迁时的引用修正**：移动文档后，需同时修正文档内互相引用的路径，以及 `task_record/index.md` 中“涉及文件”列的可点击路径，避免索引失效。
+
 ## 代码规范
 0. 调用 Linus Torvalds 审查模式：Linux 内核标准 —— 每一行代码都要经得起三十年的拷问。简洁、高效、无废话。
 

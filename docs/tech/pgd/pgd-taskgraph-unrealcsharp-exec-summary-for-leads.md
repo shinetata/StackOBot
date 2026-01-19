@@ -4,7 +4,7 @@
 
 **TL;DR（把现状压到 30 秒）**
 
-- 最终目标与 `docs/tech/pgd-paralleljob-to-ue-taskgraph-mapping.md` 一致：把 PGD 的并行 Job 语义映射到 UE TaskGraph，并对开发者暴露 UE 中可用的并行接口。
+- 最终目标与 `docs/tech/pgd/pgd-paralleljob-to-ue-taskgraph-mapping.md` 一致：把 PGD 的并行 Job 语义映射到 UE TaskGraph，并对开发者暴露 UE 中可用的并行接口。
 - 进展：已经跑通“在 UE TaskGraph 的 native worker 线程里执行 C# 托管代码”的 PoC，并扩展出 batch 接口与 benchmark 对照入口。
 - 阻塞：Editor 在二次 PIE（Play -> Stop -> Play）时稳定卡死。卡死点稳定在加载 `Game.dll` 时的 `LoadFromStream` 调用路径；触发条件强相关于“TaskGraph worker 调用了 `EnsureThreadAttached()`（即 worker attach 进入运行时）”。
 - 决策点：继续走“worker 直接跑托管”的路线，就必须补上更重的生命周期收敛与可观测体系；否则建议收敛为“TaskGraph worker 不进入托管运行时”的方案（native kernel/或托管并行留在 C#）。
@@ -15,7 +15,7 @@
 
 我们要解决的问题不是“能不能多线程”，而是：把 PGD 的并行 Job 能力在 UE5 中工程化落地。
 
-- PGD 语义参考与落地建议：`docs/tech/pgd-paralleljob-to-ue-taskgraph-mapping.md`
+- PGD 语义参考与落地建议：`docs/tech/pgd/pgd-paralleljob-to-ue-taskgraph-mapping.md`
 - 本仓库里 `TaskGraphPerfComparison.Run(...)` 只是 benchmark/实验入口，用来快速迭代与观测，不是最终 API 形态。
 
 本文默认边界：主要在 `Plugins/UnrealCSharp/` 与 `Script/` 范围内试验；不讨论最终产品化的完整 API 设计细节（那部分会在 PGD 映射文档里继续演进）。
@@ -33,7 +33,7 @@
 | 2026-01-13 19:05 | baseline/testline 双线对照（拆成两条 internal call） | `Plugins/UnrealCSharp/Script/UE/Library/TaskGraphBatchLines.cs`、`Plugins/UnrealCSharp/Script/UE/Library/FTaskGraphImplementation.cs`、`task_record/code_change_task_20260113_190518.md` |
 | 2026-01-13 19:27 | testline：缓存托管入口查找（减少每批次 class/method 查找） | `Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTaskGraph.cpp`、`task_record/code_change_task_20260113_192714.md` |
 | 2026-01-13 19:41 | baseline：回填相同缓存（把提升固化成新基线） | `Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTaskGraph.cpp`、`task_record/code_change_task_20260113_194138.md` |
-| 2026-01-15 16:08 | 二次 PIE 卡死：证据链与术语解释沉淀 | `docs/tech/unrealcsharp-taskgraph-worker-mono-attach-pie-freeze.md`、`task_record/archive/2026-W03/code_change_task_20260115_160803.md` |
+| 2026-01-15 16:08 | 二次 PIE 卡死：证据链与术语解释沉淀 | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-mono-attach-pie-freeze.md`、`task_record/archive/2026-W03/code_change_task_20260115_160803.md` |
 | 2026-01-15 19:52 | 新增：统计任务落在哪些 worker 线程（分布输出） | `Plugins/UnrealCSharp/Script/UE/Library/TaskGraphWorkerDistribution.cs`、`task_record/archive/2026-W03/code_change_task_20260115_195157.md` |
 
 ---

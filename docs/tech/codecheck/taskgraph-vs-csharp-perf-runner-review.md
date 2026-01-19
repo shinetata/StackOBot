@@ -14,7 +14,7 @@
 | C# Parallel 实现 | `Plugins/UnrealCSharp/Script/UE/Library/CSharpParallelPerf.cs` |
 
 ### 1.3 对比设计意图
-根据 `docs/tech/pgd-taskgraph-vs-csharp-task-performance.md`，对比目标是：
+根据 `docs/tech/pgd/pgd-taskgraph-vs-csharp-task-performance.md`，对比目标是：
 - **方案 A**：`TaskGraph + native kernel`（worker 不进 Mono）
 - **方案 B**：`C# 高性能 Task`（`Parallel.For` / `Task.Run`）
 
@@ -84,7 +84,7 @@ Parallel.For(0, taskCount, options,
 | 维度 | 说明 |
 | --- | --- |
 | 报告原批评 | "不是 TaskGraph vs C# Task" |
-| 项目文档定义 | `docs/tech/pgd-taskgraph-vs-csharp-task-performance.md` 明确定义为 **"TaskGraph native kernel vs C# 高性能 Task"** |
+| 项目文档定义 | `docs/tech/pgd/pgd-taskgraph-vs-csharp-task-performance.md` 明确定义为 **"TaskGraph native kernel vs C# 高性能 Task"** |
 | 结论 | 报告的批评在**语义层面成立**，但与**项目文档定位一致**。现有实现是正确的，但命名 `TaskGraphVsCSharpPerfRunner` 容易误导，建议明确为 **"native kernel vs managed parallel"**。 |
 
 ---
@@ -109,7 +109,7 @@ Parallel.For(0, taskCount, options,
 | **计算路径** | C++ tight loop | C# 托管代码 + 指针访问 |
 | **线程模型** | UE Game Thread Pool | .NET ThreadPool |
 
-**结论**：当前对比结果是 **"native kernel + TaskGraph + UE调度"** 相对于 **"managed parallel + .NET ThreadPool"** 的**综合性能**。这与 `docs/tech/pgd-taskgraph-vs-csharp-task-performance.md` 的定位一致。
+**结论**：当前对比结果是 **"native kernel + TaskGraph + UE调度"** 相对于 **"managed parallel + .NET ThreadPool"** 的**综合性能**。这与 `docs/tech/pgd/pgd-taskgraph-vs-csharp-task-performance.md` 的定位一致。
 
 ### 4.3 已知系统环境因素（不是逻辑错误）
 
@@ -167,4 +167,4 @@ Parallel.For(0, taskCount, options,
 - 原始代码：`Plugins/UnrealCSharp/Script/UE/Library/TaskGraphVsCSharpPerfRunner.cs`
 - TaskGraph 实现：`Plugins/UnrealCSharp/Script/UE/Library/TaskGraphNativeKernelPerf.cs`
 - C# Parallel 实现：`Plugins/UnrealCSharp/Script/UE/Library/CSharpParallelPerf.cs`
-- 项目定义文档：`docs/tech/pgd-taskgraph-vs-csharp-task-performance.md`
+- 项目定义文档：`docs/tech/pgd/pgd-taskgraph-vs-csharp-task-performance.md`
