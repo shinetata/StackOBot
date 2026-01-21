@@ -31,11 +31,11 @@ namespace Script.Game.StackOBot.UI.MainMenu
             UETasksManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(
                 length: 100_000,
                 taskCount: 8,
-                iterations: 32,
+                iterations: 500,
                 warmup: 3,
                 rounds: 5);
             // Console.WriteLine("=================NativeKernel vs CSharpParallel Finished=========================");
-            TaskGraphProbe.Enqueue(123);
+            // TaskGraphProbe.Enqueue(123);
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
