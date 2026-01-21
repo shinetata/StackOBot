@@ -49,7 +49,8 @@
 ### 4.2 Worker 线程 Attach/Detach 策略
 
 - worker 执行托管逻辑前：`EnsureThreadAttached()`。
-- 托管逻辑结束后：Editor 下强制 `mono_thread_detach`，保证跨 PIE 不残留。
+- 托管逻辑结束后：Editor 下默认 `mono_thread_detach`，保证跨 PIE 不残留。
+- **调试模式下禁用 per-job detach**，避免 debugger-agent 线程 TLS 断言崩溃。
 - Shipping 可关闭 detach，降低频繁 attach/detach 成本。
 
 ### 4.3 托管任务运行约束
@@ -98,7 +99,7 @@ LeaveManagedJobExecution()
 - `TryEnterManagedJobExecution / LeaveManagedJobExecution`
 - `WaitForManagedJobDrain`
 - `EnsureThreadDetached`
-- Editor 下 `ShouldDetachAfterManagedJob` 默认启用
+- Editor 下 `ShouldDetachAfterManagedJob` 默认启用，调试模式下自动关闭
 
 并在 `FMonoDomain::Initialize/Deinitialize` 中自动启用与收敛。
 
@@ -108,7 +109,7 @@ LeaveManagedJobExecution()
 改动点：
 - worker lambda 统一使用 `FManagedJobScope` 包装。
 - 若闸门关闭或 Domain 未就绪，任务直接返回。
-- Editor 下每次托管执行后 detach，避免跨 PIE 残留。
+- Editor 下每次托管执行后 detach，避免跨 PIE 残留（调试模式除外）。
 
 ## 7. 验证步骤（可复现）
 
@@ -122,6 +123,7 @@ LeaveManagedJobExecution()
 
 ### 风险
 - Editor 下每任务 detach 存在额外开销（但可接受）。
+- 调试模式下关闭 per-job detach 后，稳定性依赖 fence 与 in-flight 归零。
 - 若托管任务内部阻塞/死循环，Stop PIE 会等待 in-flight 归零而长时间停顿。
 
 ### 回滚

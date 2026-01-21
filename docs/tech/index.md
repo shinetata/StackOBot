@@ -30,7 +30,7 @@
 | `unrealcsharp` | UnrealCSharp × UE5：运行时线程模型与线程边界（C#-First 团队必读） | `docs/tech/unrealcsharp/unrealcsharp-runtime-threading-model.md` | 2026-01-12 12:41:59 - 新增 UnrealCSharp 运行时线程模型文档 `task_record/code_change_task_20260112_124159.md` |
 | `unrealcsharp` | UnrealCSharp × UE TaskGraph：用 TaskGraph 并行执行“纯 C# 计算”的可行性与设计要点（讨论沉淀） | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-parallel-csharp.md` | 2026-01-13 16:40:09 - 将非阻塞式 TaskGraph 方案沉淀到 PGD 对标文档 + 补齐本机路径 `task_record/code_change_task_20260113_163945.md` |
 | `unrealcsharp` | UnrealCSharp × UE5：TaskGraph worker 执行 C# 时，二次 PIE 卡死（LoadFromStream/Game.dll）的定位思路与方案审视 | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-mono-attach-pie-freeze.md` | 2026-01-15 17:17:13 - 补充“线程状态不收敛/stop-the-world”ASCII 解释图 `task_record/archive/2026-W03/code_change_task_20260115_171713.md` |
-| `unrealcsharp` | UnrealCSharp × UE TaskGraph：借鉴 Unity “scripting jobs”经验，缓解/解决 PIE 卡死（Managed 任务跑在 worker 上） | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-scripting-jobs-fence.md` | 2026-01-20 21:00:11 - TaskGraph worker 托管执行 fence 与生命周期方案（PIE 稳定） `task_record/code_change_task_20260120_210011.md` |
+| `unrealcsharp` | UnrealCSharp × UE TaskGraph：借鉴 Unity “scripting jobs”经验，缓解/解决 PIE 卡死（Managed 任务跑在 worker 上） | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-scripting-jobs-fence.md` | 2026-01-21 09:32:50 - 调试模式禁用 per-job detach，避免 debugger-agent 断言 `task_record/code_change_task_20260121_093250.md` |
 | `unrealcsharp` | UnrealCSharp × Unreal Engine：交互机制与新手上手指南（以本仓库为例） | `docs/tech/unrealcsharp/unrealcsharp-ue-interaction-beginner-guide.md` | 2026-01-13 09:59:25 - 补充 C# 输出到 UE Output Log 的三种方式 `task_record/code_change_task_20260113_095925.md` |
 
 ## 维护规则（简版）
