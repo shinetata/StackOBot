@@ -33,6 +33,7 @@
 | `unrealcsharp` | UnrealCSharp × UE TaskGraph：借鉴 Unity “scripting jobs”经验，缓解/解决 PIE 卡死（Managed 任务跑在 worker 上） | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-scripting-jobs-fence.md` | 2026-01-21 11:00:49 - 展开路线 B 的引擎改造方案细节 `task_record/code_change_task_20260121_110055.md` |
 | `unrealcsharp` | UE TaskGraph 执行 C# 逻辑的探索总结（排除 Native Kernel） | `docs/tech/unrealcsharp/unrealcsharp-taskgraph-worker-managed-exploration-summary.md` | 2026-01-21 11:12:23 - 任务链路、PIE 安全机制与路线 A/B 总结 `task_record/code_change_task_20260121_111230.md` |
 | `unrealcsharp` | UE::Tasks 托管执行测试方案（面向小白） | `docs/tech/unrealcsharp/ue-tasks-managed-test-plan.md` | 2026-01-21 17:42:31 - 新增 NativeBuffer 对比版本并改为取平均值 `task_record/code_change_task_20260121_174231.md` |
+| `unrealcsharp` | UE::Tasks（方案A：Slice Thunk）设计说明与实测结果（含 Managed Pinned / NativeBuffer） | `docs/tech/unrealcsharp/ue-tasks-slice-batch-design-and-results.md` | 2026-01-21 19:57:00 - 补齐 UE::Tasks 方案A 文档（设计+流程+测试结果） `task_record/code_change_task_20260121_195615.md` |
 | `unrealcsharp` | UnrealCSharp × Unreal Engine：交互机制与新手上手指南（以本仓库为例） | `docs/tech/unrealcsharp/unrealcsharp-ue-interaction-beginner-guide.md` | 2026-01-13 09:59:25 - 补充 C# 输出到 UE Output Log 的三种方式 `task_record/code_change_task_20260113_095925.md` |
 
 ## 维护规则（简版）
