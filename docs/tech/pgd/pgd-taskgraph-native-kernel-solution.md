@@ -68,6 +68,48 @@ Events.Add(FFunctionGraphTask::CreateAndDispatchWhenReady([StateHandle, Index, I
 - **线程亲和性与生命周期管理困难**：TaskGraph 只保证“某个 worker 执行某个 task”，不保证“同一个 OS 线程贯穿一个托管线程生命周期”。一旦需要严格配对的 detach/cleanup，就会变成隐患来源。
 - **性能热路径的跨语言开销**：即使缓存 `MonoMethod*`，`Runtime_Invoke` 仍是桥接路径；如果任务粒度小（chunk/section 很细），跨语言调用会吞掉并行收益。
 
+#### 1.1.1 现象与证据（本仓库调试中真实遇到过）
+
+下面这些是“worker 线程进入 Mono”后，在 Editor/PIE 反复 Play/Stop 场景中观测到的两类典型失败模式（它们并不互斥）：
+
+1) **cooperative GC 线程状态断言 / 运行时锁相关错误**  
+曾出现类似断言（由 `FMonoLog::Log()` 打印）：
+
+```text
+mono_coop_mutex_lock Cannot transition thread ... from STATE_BLOCKING with DO_BLOCKING
+```
+
+2) **debugger-agent TLS 断言（开启调试器代理时）**  
+在 `UUnrealCSharpSetting.bEnableDebug=true`（会启用 `--debugger-agent=...`）时，worker 路径上触发过：
+
+```text
+Assertion at ...\mono\component\debugger-agent.c:3904, condition `!tls' not met
+```
+
+这类错误的共同点是：它们都发生在 worker task 内部进入 Mono（attach / invoke）附近，而不是纯 native kernel 路径。
+
+#### 1.1.2 根因链路（为什么“像 GT 一样清理”不成立）
+
+要理解“PIE 卡死/断言”为什么顽固，关键是把“Mono attach”理解成**对 OS 线程的状态绑定**，而不是“对一次 task 的临时行为”：
+
+- `mono_thread_attach(Domain)` 会把**当前 OS 线程**注册为可执行托管代码的线程，并在 Mono 内部/线程 TLS 中建立对应状态（thread context、GC 协作状态、调试器 agent 的 TLS 等）。这些状态天然是 thread-affine 的。
+- UE 的 TaskGraph/UE::Tasks worker 属于**线程池复用线程**：
+  - 线程不会在 PIE Stop 时销毁；
+  - 线程可能在引擎内部队列/调度器上阻塞等待；
+  - 任务分配不保证“同一 OS 线程连续执行同一类托管任务”，更不保证能在 Stop 时把“曾经 attach 过 Mono 的那批线程”召回到一个可安全 detach 的点。
+- Mono cooperative GC / debugger-agent 对线程状态有硬约束：
+  - cooperative GC 依赖线程在合适的时机进入 safepoint、正确标记阻塞/运行状态；若 OS 线程在 Mono 认为“不该阻塞”的阶段进入了引擎的阻塞等待点，就可能把 GC/加载器锁推向死锁或断言。
+  - debugger-agent 在 TLS 上有更严格的生命周期假设：对同一 OS 线程反复 attach/detach（或 attach 重入）更容易直接触发 `!tls` 断言。
+
+把上面三点合起来，就是结论：**GT 是“引擎可控、可预期生命周期”的线程，而 TaskGraph worker 的生命周期/阻塞点不受插件控制**。因此，“像 GT 一样在 Stop 时清理 worker 的 Mono 状态”在工程上很难做得可靠。
+
+#### 1.1.3 工程结论（对 PGD 的意义）
+
+仅基于当前仓库实现与调试观测，可以给出一个不偏向任何历史方案的结论：
+
+- “TaskGraph worker 直接执行托管逻辑（attach + `Runtime_Invoke`）”可以作为 PoC/功能兜底，但**不适合**作为 PGD 这类高频热路径的主线并行执行方式（稳定性与性能都存在硬上限）。
+- 若团队最终目标是 Unity IJobEntity 那种“开发者用 C# 写任务逻辑、系统自动并行调度”的体验，且又要保证 Editor/PIE 可反复调试，通常需要把“执行托管逻辑的线程”从 UE worker 线程池中剥离出来（例如：插件自管、固定数量、可控生命周期的托管 worker 线程池），或走 AOT/原生化路线，从根上绕开 Mono 线程协作问题。
+
 结论：方式 A 在功能上“能跑”，但**稳定性与性能都很难满足 PGD 热路径诉求**。它更适合作为“可行性证明/功能兜底”，不适合作为极致性能主线。
 
 补充阅读（仓库现有讨论沉淀）：
