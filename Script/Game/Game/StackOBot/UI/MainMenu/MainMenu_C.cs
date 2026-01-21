@@ -27,7 +27,13 @@ namespace Script.Game.StackOBot.UI.MainMenu
         public override void ReceiveBeginPlay()
         {
             // TaskGraphPerfComparison.Run(length: 10000, taskCount: 8, queryCount: 5, iterations: 1024, warmup: 3);
-            TaskGraphManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare();
+            // TaskGraphManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(length: 500000);
+            UETasksManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(
+                length: 100_000,
+                taskCount: 8,
+                iterations: 32,
+                warmup: 3,
+                rounds: 5);
             // Console.WriteLine("=================NativeKernel vs CSharpParallel Finished=========================");
             TaskGraphProbe.Enqueue(123);
             var OutActors = new TArray<AActor>();

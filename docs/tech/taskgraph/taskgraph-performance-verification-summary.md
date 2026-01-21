@@ -162,6 +162,69 @@ TaskGraphManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(
 - `[ManagedPerfRound]`：单轮 `tg/pf/tr` 耗时与 `sumOk`。
 - `[ManagedPerfSummary]`：中位数 + `ratioPf/ratioTr`。
 
+#### 3.5.5 结果（2 组独立运行）
+
+| 运行 | tgMedian(ms) | pfMedian(ms) | trMedian(ms) | ratioPf | ratioTr |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1.831 | 1.876 | 1.598 | 1.025 | 0.873 |
+| 2 | 1.929 | 1.822 | 1.650 | 0.944 | 0.855 |
+
+## 3.6 新增用例：UE::Tasks 执行 C# vs Task.Run vs Parallel.For（单数组）
+
+> 目的：对比“UE::Tasks 托管执行 C#”与 C# 并行（Task.Run / Parallel.For）的性能差异，复用与 3.5 相同的数据规模与口径。
+
+### 3.6.1 任务说明（纯计算）
+
+- 任务：对 `int[]` 做 `data[i] += 1` 并求和（单数组 AddOneAndSum）。
+- 约束：禁止访问 `UObject` / 资源加载 / GameThread 同步，仅允许纯计算与托管数组读写。
+
+### 3.6.2 参数与口径（与 3.5 一致）
+
+- 参数：`length=100000, taskCount=8, iterations=32, warmup=3, rounds=5`。
+- 口径：
+  - 每轮按 `UE::Tasks / PF / TR` 交错顺序执行。
+  - 输出 `ueMedian/pfMedian/trMedian` 与 `ratioPf/ratioTr`。
+  - 固定并行度：`ParallelOptions.MaxDegreeOfParallelism = taskCount`。
+  - GC 控制：每条路径执行前 `GC.Collect()` + `GC.WaitForPendingFinalizers()` + `GC.Collect()`。
+
+### 3.6.3 实现与入口
+
+- 新增 Runner：`Plugins/UnrealCSharp/Script/UE/Library/UETasksManagedVsCSharpPerfRunner.cs`
+  - 负责：
+    1) 构建 3 份等价 `int[]`（UE/PF/TR 各一份，避免互相污染）。  
+    2) 统一 chunk 切分（`start/end`）并保持一致。  
+    3) 交错顺序 + 中位数统计 + `sumOk` 验证。  
+- UE::Tasks 托管执行路径：
+  - 使用 `UETasksBatch.ExecuteBatch(action, taskCount)`，由 UE::Tasks worker 调用托管 `ExecuteIndex`。  
+  - `ExecuteIndex` 内部直接访问 `int[]` 的区间切片，保持与 PF/TR 等价的访问模式。
+- C# 并行路径：
+  - `Parallel.For`：固定 `ParallelOptions.MaxDegreeOfParallelism = taskCount`，按 chunk 处理。
+  - `Task.Run`：每个 chunk 一个 task，等待全部完成后汇总。
+- 运行入口（建议在 PIE 下临时绑定）：
+  - `Script/Game/Game/StackOBot/UI/MainMenu/MainMenu_C.cs` 的 `ReceiveBeginPlay()` 中调用：
+
+```csharp
+UETasksManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(
+    length: 100_000,
+    taskCount: 8,
+    iterations: 32,
+    warmup: 3,
+    rounds: 5);
+```
+
+### 3.6.4 输出字段（建议）
+
+- `[UETasksPerfRound]`：单轮 `ue/pf/tr` 耗时与 `sumOk`。
+- `[UETasksPerfSummary]`：中位数 + `ratioPf/ratioTr`。
+
+### 3.6.5 结果（3 组独立运行）
+
+| 运行 | ueMedian(ms) | pfMedian(ms) | trMedian(ms) | ratioPf | ratioTr |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1.553 | 1.122 | 1.170 | 0.722 | 0.753 |
+| 2 | 1.574 | 1.062 | 1.224 | 0.675 | 0.778 |
+| 3 | 1.671 | 1.212 | 1.321 | 0.725 | 0.790 |
+
 ## 4. 验证方案二：ECS 多 archetype + 多 section（固定参数）
 
 ### 4.1 方案说明
@@ -299,6 +362,10 @@ TaskGraphVsCSharpEcsPerfRunner.RunPosVelArchetypeCompareSweep(
 - 托管数组基准（TaskGraph worker 直接跑 C#）：
   - `Plugins/UnrealCSharp/Script/UE/Library/TaskGraphManagedVsCSharpPerfRunner.cs`
   - `Plugins/UnrealCSharp/Script/UE/Library/TaskGraphBatch.cs`
+- 托管数组基准（UE::Tasks 直接跑 C#）：
+  - `Plugins/UnrealCSharp/Script/UE/Library/UETasksManagedVsCSharpPerfRunner.cs`
+  - `Plugins/UnrealCSharp/Script/UE/Library/UETasksBatch.cs`
+  - `Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasks.cpp`
 - ECS 多 archetype 基准：
   - `Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FNativeBufferTaskGraphEcs.cpp`
   - `Plugins/UnrealCSharp/Script/UE/Library/EcsArchetypePerf.cs`
