@@ -38,8 +38,8 @@ namespace Script.Game.StackOBot.UI.MainMenu
             // TaskGraphProbe.Enqueue(123);
             // UETasksSlicePerfRunner.RunManagedPinnedAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
             // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
-            UETasksSliceDelegateInvokeDemo.RunLogOnWorkerByRuntimeInvoke();
-            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 40_000, taskCount: 6, iterations: 64);
+            // UETasksSliceDelegateInvokeDemo.RunLogOnWorkerByRuntimeInvoke();
+            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 500_000, taskCount: 120, iterations: 64);
             // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 100_000, taskCount: 6, iterations: 64);
             var OutActors = new TArray<AActor>();
 
