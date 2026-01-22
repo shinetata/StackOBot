@@ -22,8 +22,11 @@ static void ExecuteImplementation(MonoObject* InDelegate)
         return;
     }
 
+    TArray<UE::Tasks::FTask> TaskList;
+    TaskList.Reserve(SafeTaskCount);
+
     UE::Tasks::FTask Task;
-    Task.Launch([FoundMethod]()
+    Task.Launch(TEXT("UETasksSlice.ExecuteWithHandler"), [FoundMethod]()
     {
         // 获取GT线程和Worker线程ID，与C#中获取的进行对比
         // 若一致，则说明C#代码在Task Worker线程跑起来了
@@ -39,8 +42,9 @@ static void ExecuteImplementation(MonoObject* InDelegate)
             FMonoDomain::Unhandled_Exception(Exception);
         }
     });
+    TaskList.Add(MoveTemp(Task));
 
-    UE::Tasks::Wait(Task);
+    UE::Tasks::Wait(TaskList);
 }
 
 // c#
@@ -86,7 +90,7 @@ void FMonoDomain::EnsureThreadAttached()
     (void)mono_thread_attach(Domain);
 }
 
-Task.Launch([...]()
+Task.Launch(..., [...]()
 {
     FMonoDomain::EnsureThreadAttached();
     // 执行C#方法
@@ -200,54 +204,27 @@ public static void RunNative(NativeBuffer<int> buf, int taskCount)
 }
 ```
 
+
 C#原生的Task/Parallel同理，切片处理和任务分配都在C#层，用Task.Run和Parallel.For去执行任务，这里不再罗列。测试用例中提供不同长度的数组，分别使用不同的任务数量，迭代500轮。执行5次取执行时长的平均值，结果如下：
 
-**Case 1：length=10000, taskCount=2**
+> `ratioPf/ratioTr` 的含义：`PF/UE`、`TR/UE`（>1 表示 PF/TR 比 UE 慢）。
 
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 9.260 | 11.387 | 9.292 | 1.230 | 1.003 |
-| NativeBuffer | 7.658 | 11.436 | 8.153 | 1.493 | 1.065 |
+| Case | length | taskCount | 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 10,000 | 2 | Managed Pinned | 9.260 | 11.387 | 9.292 | 1.230 | 1.003 |
+| 2 | 10,000 | 3 | Managed Pinned | 8.734 | 16.012 | 8.635 | 1.833 | 0.989 |
+| 3 | 10,000 | 4 | Managed Pinned | 9.181 | 16.994 | 6.234 | 1.851 | 0.679 |
+| 4 | 20,000 | 4 | Managed Pinned | 9.912 | 14.528 | 9.436 | 1.466 | 0.952 |
+| 5 | 40,000 | 4 | Managed Pinned | 13.084 | 23.670 | 15.417 | 1.809 | 1.178 |
+| 6 | 200,000 | 4 | Managed Pinned | 31.238 | 35.858 | 35.428 | 1.148 | 1.134 |
+| 7 | 200,000 | 6 | Managed Pinned | 31.157 | 33.173 | 39.414 | 1.065 | 1.265 |
+| 1 | 10,000 | 2 | NativeBuffer | 7.658 | 11.436 | 8.153 | 1.493 | 1.065 |
+| 2 | 10,000 | 3 | NativeBuffer | 8.293 | 15.959 | 7.534 | 1.924 | 0.909 |
+| 3 | 10,000 | 4 | NativeBuffer | 8.787 | 16.652 | 6.101 | 1.895 | 0.694 |
+| 4 | 20,000 | 4 | NativeBuffer | 10.046 | 14.034 | 9.392 | 1.397 | 0.935 |
+| 5 | 40,000 | 4 | NativeBuffer | 12.012 | 22.612 | 14.500 | 1.882 | 1.207 |
+| 6 | 200,000 | 4 | NativeBuffer | 30.530 | 37.447 | 34.405 | 1.227 | 1.127 |
+| 7 | 200,000 | 6 | NativeBuffer | 26.312 | 33.097 | 36.480 | 1.258 | 1.386 |
 
-**Case 2：length=10000, taskCount=3**
-
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 8.734 | 16.012 | 8.635 | 1.833 | 0.989 |
-| NativeBuffer | 8.293 | 15.959 | 7.534 | 1.924 | 0.909 |
-
-
-**Case 3：length=10000, taskCount=4**
-
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 9.181 | 16.994 | 6.234 | 1.851 | 0.679 |
-| NativeBuffer | 8.787 | 16.652 | 6.101 | 1.895 | 0.694 |
-
-**Case 4：length=20000, taskCount=4**
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 9.912 | 14.528 | 9.436 | 1.466 | 0.952 |
-| NativeBuffer | 10.046 | 14.034 | 9.392 | 1.397 | 0.935 |
-
-**Case 5：length=40000, taskCount=4**
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 13.084 | 23.670 | 15.417 | 1.809 | 1.178 |
-| NativeBuffer | 12.012 | 22.612 | 14.500 | 1.882 | 1.207 |
-
-**Case 6：length=200_000, taskCount=4**
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 31.238 | 35.858 | 35.428 | 1.148 | 1.134 |
-| NativeBuffer | 30.530 | 37.447 | 34.405 | 1.227 | 1.127 |
-
-
-**Case 7：length=200_000, taskCount=6**
-| 数组类型 | UE Avg (ms) | PF Avg (ms) | TR Avg (ms) | ratioPf | ratioTr |
-| --- | --- | --- | --- | --- | --- |
-| Managed Pinned | 31.157 | 33.173 | 39.414 | 1.065 | 1.265 |
-| NativeBuffer | 26.312 | 33.097 | 36.480 | 1.258 | 1.386 |
-
-可以看出在所有 Case 中，Parallel.For都明显更慢（ratioPf > 1）。而在小数据/低并行度时C# Task与接近UE Tasks接近或更快，数据量增大后 UE 更有优势。
+可以看出在所有 Case 中，Parallel.For都明显更慢（ratioPf > 1）。而在小数据/低并行度时C# Task与接近UE Tasks接近或更快，数据量增大且并行度提高后 UE Tasks更有优势。
 同时相比托管数组，Native数组性能更高。
