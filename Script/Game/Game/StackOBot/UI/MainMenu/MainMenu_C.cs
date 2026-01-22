@@ -36,10 +36,11 @@ namespace Script.Game.StackOBot.UI.MainMenu
             //     rounds: 5);
             // Console.WriteLine("=================NativeKernel vs CSharpParallel Finished=========================");
             // TaskGraphProbe.Enqueue(123);
-            UETasksSlicePerfRunner.RunManagedPinnedAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
-            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
+            // UETasksSlicePerfRunner.RunManagedPinnedAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
+            // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
             // UETasksSliceDelegateInvokeDemo.RunLogOnWorkerByRuntimeInvoke();
-            // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 200_000, taskCount: 4, iterations: 500);
+            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 40_000, taskCount: 6, iterations: 64);
+            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 100_000, taskCount: 6, iterations: 64);
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
