@@ -26,21 +26,7 @@ namespace Script.Game.StackOBot.UI.MainMenu
         [Override]
         public override void ReceiveBeginPlay()
         {
-            // TaskGraphPerfComparison.Run(length: 10000, taskCount: 8, queryCount: 5, iterations: 1024, warmup: 3);
-            // TaskGraphManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(length: 500000);
-            // UETasksManagedVsCSharpPerfRunner.RunManagedAddOneAndSumCompare(
-            //     length: 100_000,
-            //     taskCount: 8,
-            //     iterations: 500,
-            //     warmup: 3,
-            //     rounds: 5);
-            // Console.WriteLine("=================NativeKernel vs CSharpParallel Finished=========================");
-            // TaskGraphProbe.Enqueue(123);
-            // UETasksSlicePerfRunner.RunManagedPinnedAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
-            // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompare(length:100_000, taskCount: 10, iterations: 500);
-            // UETasksSliceDelegateInvokeDemo.RunLogOnWorkerByRuntimeInvoke();
-            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 500_000, taskCount: 120, iterations: 64);
-            // UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 100_000, taskCount: 6, iterations: 64);
+            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 100000, taskCount: 8, iterations: 8);
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
