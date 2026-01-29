@@ -103,23 +103,38 @@ namespace Script.Game.StackOBot.UI.MainMenu
                 return list.Sum() / list.Count;
             }
             
-            for (int round = 0; round < EXECUTE_ROUND; round++)
+            // for (int round = 0; round < EXECUTE_ROUND; round++)
+            // {
+            //     bool ab = (round % 2 == 0); // 偶数轮：A->B，奇数轮：B->A
+            //     if (!ab)
+            //     {
+            //         MeasureUe(ueTimes);
+            //         MeasurePgd(prTimes);
+            //     }
+            //     else
+            //     {
+            //         MeasurePgd(prTimes);
+            //         MeasureUe(ueTimes);
+            //     }
+            // }
+            //
+            // Console.WriteLine($"ExecuteUeParallel cost: {Median(ueTimes)} ms");
+            // Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
+            Console.WriteLine("[ScheduleTest] before schedule");
+            var handle = query.ScheduleUeParallel((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
             {
-                bool ab = (round % 2 == 0); // 偶数轮：A->B，奇数轮：B->A
-                if (!ab)
+                // 模拟耗时
+                for (int i = 0; i < 100000; i++)
                 {
-                    MeasureUe(ueTimes);
-                    MeasurePgd(prTimes);
+                    pos.x += 1;
                 }
-                else
-                {
-                    MeasurePgd(prTimes);
-                    MeasureUe(ueTimes);
-                }
-            }
-            
-            Console.WriteLine($"ExecuteUeParallel cost: {Median(ueTimes)} ms");
-            Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
+            });
+            Console.WriteLine("[ScheduleTest] after schedule (should be immediate)");
+
+            Console.WriteLine($"[ScheduleTest] IsCompleted: {handle.IsCompleted}");
+            // handle.Wait();
+            Console.WriteLine("[ScheduleTest] after Wait (should be later)");
+            // handle.Dispose();
         }
 
         private void CreateTestEntities(IECSWorld world)
