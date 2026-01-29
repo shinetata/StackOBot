@@ -1,1 +1,12 @@
-﻿
+﻿| 时间戳 | 标题 | tags | 涉及文件 | 验证方式 | 记录文件 |
+| --- | --- | --- | --- | --- | --- |
+| 2026-01-28 14:39:49 | 基于 UE Tasks 的 IQuery.ParallelForEach 方案设计文档 | design; ue-tasks; pgd | docs/tech/pgd/ue_tasks_parallel_query_design.md；docs/tech/index.md | 无（文档变更） | task_record/archive/2026-W05/code_change_task_20260128_143949.md |
+| 2026-01-28 15:40:15 | 恢复 ue_tasks_parallel_query_design.md | restore; docs | docs/tech/pgd/ue_tasks_parallel_query_design.md；docs/tech/index.md | 无（文档变更） | task_record/archive/2026-W05/code_change_task_20260128_154015.md |
+| 2026-01-28 16:13:50 | UE Tasks 最小并行实现（ExecuteUeParallel） | ue-tasks; pgd; csharp | Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp；Plugins/UnrealCSharp/Script/UE/Library/FTasksQueryImplementation.cs；Plugins/UnrealCSharp/Script/UE/Library/UETasksQueryBatch.cs；Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260128_161350.md |
+| 2026-01-28 17:32:34 | 默认策略调整 + UE worker 线程数绑定 | ue-tasks; pgd; perf | Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp；Plugins/UnrealCSharp/Script/UE/Library/FTasksQueryImplementation.cs；Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260128_173234.md |
+| 2026-01-28 17:37:27 | 修复编译错误（任务名遮蔽 + 线程数 API） | build-fix; ue-tasks | Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp | 未运行 | task_record/archive/2026-W05/code_change_task_20260128_173727.md |
+| 2026-01-29 09:49:16 | 简化 UE Tasks 并行调用链 | ue-tasks; refactor | Plugins/UnrealCSharp/Script/UE/Library/UETasksQueryRunner.cs；Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp；Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_094916.md |
+| 2026-01-29 10:39:21 | 移除 Query 锁生命周期处理 | ue-tasks; perf | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_103921.md |
+| 2026-01-29 10:47:27 | 修复 IEntity 构造函数不可访问 | build-fix; pgd | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_104727.md |
+| 2026-01-29 10:51:47 | 删除无用 taskCount 字段 | cleanup | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_105147.md |
+| 2026-01-29 14:26:09 | 按 chunk 直接调度 UE Tasks | ue-tasks; perf | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_142609.md |

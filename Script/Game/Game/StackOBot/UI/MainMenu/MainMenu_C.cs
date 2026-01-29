@@ -1,12 +1,19 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Script.CoreUObject;
 using Script.Engine;
 using Script.Library;
+using PGD;
+using PGD.Parallel;
 
 namespace Script.Game.StackOBot.UI.MainMenu
 {
+    public struct Health   : IComponent { public int HP; }
+    public struct Mana     : IComponent { public int MP; }
     /*
      * As this is purely cosmetic and only in this main menu level the level blueprint is a nice and easy place to change the robots face every few seconds.
      * For gameplay you might want to look for a more flexible way that the actors can communicate with each other.
@@ -16,6 +23,10 @@ namespace Script.Game.StackOBot.UI.MainMenu
     [Override]
     public partial class MainMenu_C : ALevelScriptActor, IStaticClass
     {
+        private const int ENTITY_COUNT = 40_000;
+        private const int ITERATION = 256;
+        private const int WRAM_UP_TIMES = 50;
+        private const int EXECUTE_ROUND = 10;
         public new static UClass StaticClass()
         {
             return StaticClassSingleton ??=
@@ -26,7 +37,6 @@ namespace Script.Game.StackOBot.UI.MainMenu
         [Override]
         public override void ReceiveBeginPlay()
         {
-            UETasksSlicePerfRunner.RunNativeBufferAddOneAndSumCompareByHandler(length: 100000, taskCount: 8, iterations: 8);
             var OutActors = new TArray<AActor>();
 
             UGameplayStatics.GetAllActorsOfClass(this, ASkeletalMeshActor.StaticClass(), ref OutActors);
@@ -41,6 +51,127 @@ namespace Script.Game.StackOBot.UI.MainMenu
 
                 ChangeMood();
             }
+            
+            RunParallelPerf();
+        }
+
+        private void RunParallelPerf()
+        {
+            var world = new IECSWorld();
+            var ueTimes = new List<long>(EXECUTE_ROUND);
+            var prTimes = new List<long>(EXECUTE_ROUND);
+            CreateTestEntities(world);
+            
+            var query = world.Query<PGDPosition, PGDRotation>();
+            Console.WriteLine($"chunk count: {query.ArchetypeChunk}");
+            // 局部计时函数
+            void MeasureUe(List<long> list)
+            {
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < ITERATION; i++)
+                {
+                    query.ExecuteUeParallel((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
+                    {
+                        pos.x += 1;
+                        rot.x += 1;
+                    });
+                }
+                sw.Stop();
+                list.Add(sw.ElapsedMilliseconds);
+            }
+            
+            void MeasurePgd(List<long> list)
+            {
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < ITERATION; i++)
+                {
+                    query.ParallelForEach((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
+                    {
+                        pos.x += 1;
+                        rot.x += 1;
+                    });
+                }
+                sw.Stop();
+                list.Add(sw.ElapsedMilliseconds);
+            }
+            
+            long Median(List<long> list)
+            {
+                // list.Sort();
+                // int mid = list.Count / 2;
+                // return list.Count % 2 == 1 ? list[mid] : (list[mid - 1] + list[mid]) / 2;
+                return list.Sum() / list.Count;
+            }
+            
+            for (int round = 0; round < EXECUTE_ROUND; round++)
+            {
+                bool ab = (round % 2 == 0); // 偶数轮：A->B，奇数轮：B->A
+                if (!ab)
+                {
+                    MeasureUe(ueTimes);
+                    MeasurePgd(prTimes);
+                }
+                else
+                {
+                    MeasurePgd(prTimes);
+                    MeasureUe(ueTimes);
+                }
+            }
+            
+            Console.WriteLine($"ExecuteUeParallel cost: {Median(ueTimes)} ms");
+            Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
+        }
+
+        private void CreateTestEntities(IECSWorld world)
+        {
+            for (int i = 0; i < ENTITY_COUNT; i++)
+            {
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Health()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Mana()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Mana(),
+                    new Health()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Mana(),
+                    new PGDScale()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Mana(),
+                    new PGDTransform()
+                );
+                
+                world.CreateEntity(
+                    new PGDPosition(),
+                    new PGDRotation(),
+                    new Mana(),
+                    new Health(),
+                    new PGDScale()
+                );
+            }   
         }
 
         [Override]
