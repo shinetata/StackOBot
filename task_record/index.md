@@ -10,3 +10,4 @@
 | 2026-01-29 10:47:27 | 修复 IEntity 构造函数不可访问 | build-fix; pgd | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_104727.md |
 | 2026-01-29 10:51:47 | 删除无用 taskCount 字段 | cleanup | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_105147.md |
 | 2026-01-29 14:26:09 | 按 chunk 直接调度 UE Tasks | ue-tasks; perf | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_142609.md |
+| 2026-01-29 18:30:26 | ExecuteBatch Debug 分支去重与性能修正 | ue-tasks; debug; perf | Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp | 未运行 | task_record/archive/2026-W05/code_change_task_20260129_183026.md |
