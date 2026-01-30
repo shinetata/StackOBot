@@ -188,10 +188,42 @@ namespace Script.Game.StackOBot.UI.MainMenu
                     MeasureScheduleCombine(scheduleCombineTimes);
                 }
             }
-
+            
             Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
             Console.WriteLine($"ScheduleUeParallel+Combine cost: {Median(scheduleCombineTimes)} ms");
             Console.WriteLine("[ScheduleTest] before schedule");
+        }
+
+        private void VerifyScheduleWrite(IECSWorld world)
+        {
+            var query = world.Query<PGDPosition>();
+            const float BaseValue = 100.0f;
+            const float DeltaValue = 7.0f;
+            const float Epsilon = 0.001f;
+
+            query.ExecuteUeParallel((ref PGDPosition pos, IEntity entity) =>
+            {
+                pos.x = BaseValue;
+            });
+
+            var handle = query.ScheduleUeParallel((ref PGDPosition pos, IEntity entity) =>
+            {
+                pos.x += DeltaValue;
+            });
+            handle.Dispose();
+
+            var errorCount = 0;
+            query.ExecuteUeParallel((ref PGDPosition pos, IEntity entity) =>
+            {
+                if (Math.Abs(pos.x - (BaseValue + DeltaValue)) > Epsilon)
+                {
+                    Interlocked.Increment(ref errorCount);
+                }
+            });
+
+            Console.WriteLine(errorCount == 0
+                ? "[Verify] ScheduleUeParallel OK"
+                : $"[Verify] ScheduleUeParallel FAILED, errorCount={errorCount}");
         }
 
         private void CreateTestEntities(IECSWorld world)

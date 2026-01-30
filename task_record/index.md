@@ -21,3 +21,4 @@
 | 2026-01-30 11:00:00 | UETasks 深度审视与优化（提取公共逻辑+删除无效参数） | ue-tasks; refactor; cleanup | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs；Plugins/UnrealCSharp/Script/UE/Library/UETasksQueryRunner.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260130_110000.md |
 | 2026-01-30 11:00:15 | 修复 UETasksQueryExtensions.cs 编译错误（CS0411/CS1061） | build-fix; ue-tasks | Script/Game/PGD/Parallel/UETasksQueryExtensions.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260130_110015.md |
 | 2026-01-30 15:03:00 | Combine 性能优化（减少分配 + 缩短锁持有） | ue-tasks; perf | Script/Game/PGD/Parallel/UETasksJobHandleUtils.cs；Plugins/UnrealCSharp/Source/UnrealCSharp/Private/Domain/InternalCall/FTasksQuery.cpp | 未运行 | task_record/archive/2026-W05/code_change_task_20260130_150300.md |
+| 2026-01-30 17:05:00 | 新增 ScheduleUeParallel 写入验证入口 | ue-tasks; test | Script/Game/Game/StackOBot/UI/MainMenu/MainMenu_C.cs | 未运行 | task_record/archive/2026-W05/code_change_task_20260130_170500.md |
