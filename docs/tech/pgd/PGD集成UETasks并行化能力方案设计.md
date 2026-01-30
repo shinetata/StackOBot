@@ -55,4 +55,16 @@ Console.WriteLine($"=====ecsworld entity num: {world.EntityNum}, id: {entity.Id}
 ```
 
 ## PGD集成UE Tasks并行化能力
-PGD集成UE Tasks并行化能力本质是在UE Tasks中执行开发者预定义好的C#托管任务，将Chunk遍历处理的逻辑直接仿佛Tasks中，由UE底层进行任务线程调度
+PGD集成UE Tasks并行化能力本质是在UE Tasks中执行开发者预定义好的C#托管任务，将Chunk遍历处理的逻辑直接仿佛Tasks中，由UE底层进行任务线程调度。
+
+### 任务Handle使用注意事项
+
+**句柄生命周期规则**
+- ScheduleUeParallel 返回的handle在handle.Wait()后必须释放
+- 同一个 handle 只允许被 Combine 一次。Combine 后，原 handle 进入“已转移”状态，不可再次使用
+- Combine 之前，不要 Dispose 原 handle。Dispose 会使 native map 中移除任务，Combine 会失败
+- 不要混用 Wait/IsCompleted + Combine。如果已经 Wait 完成，可直接 Dispose，不需要再 Combine
+
+**Combine正确用法**
+- 必须传入仍然有效的 handle
+- Combine 后只使用返回的新 handle，原 handle 进入“已转移/不可用”状态

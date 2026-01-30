@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Script.Library;
 
@@ -6,44 +7,17 @@ namespace PGD.Parallel;
 
 public static class UETasksQueryExtensions
 {
-    public static void ExecuteUeParallel<T1>(
-        this IQuery<T1> query,
-        ForEachEntity<T1> lambda,
-        int taskCount = 0)
+    public static void ExecuteUeParallel<T1>(this IQuery<T1> query, ForEachEntity<T1> lambda)
         where T1 : struct
     {
         if (lambda == null) throw new ArgumentNullException(nameof(lambda));
 
-        var chunkCount = query.ChunkCount;
-        var chunks = new ArchetypeChunk<T1>[Math.Max(4, chunkCount)];
-        var enumerator = query.ArchetypeChunk.GetEnumerator();
-        var count = 0;
-        try
-        {
-            while (enumerator.MoveNext())
-            {
-                if (count == chunks.Length)
-                {
-                    Array.Resize(ref chunks, Math.Max(4, count * 2));
-                }
+        var (chunks, count) = CollectChunks(query);
+        if (count == 0) return;
 
-                chunks[count++] = enumerator.Current;
-            }
-        }
-        finally
-        {
-            enumerator.Dispose();
-        }
-
-        if (count == 0)
-        {
-            return;
-        }
-
-        var actualTaskCount = count;
         var runner = new QueryRunner1<T1>(query.World, chunks, count, lambda);
 
-        if (actualTaskCount == 1)
+        if (count == 1)
         {
             runner.ExecuteTask(0);
             return;
@@ -54,7 +28,7 @@ public static class UETasksQueryExtensions
         {
             FTasksQueryImplementation.FTasksQuery_ExecuteBatchImplementation(
                 (nint)GCHandle.ToIntPtr(handle),
-                actualTaskCount,
+                count,
                 wait: true);
         }
         finally
@@ -63,44 +37,17 @@ public static class UETasksQueryExtensions
         }
     }
 
-    public static UETasksJobHandle ScheduleUeParallel<T1>(
-        this IQuery<T1> query,
-        ForEachEntity<T1> lambda,
-        int taskCount = 0)
+    public static UETasksJobHandle ScheduleUeParallel<T1>(this IQuery<T1> query, ForEachEntity<T1> lambda)
         where T1 : struct
     {
         if (lambda == null) throw new ArgumentNullException(nameof(lambda));
 
-        var chunkCount = query.ChunkCount;
-        var chunks = new ArchetypeChunk<T1>[Math.Max(4, chunkCount)];
-        var enumerator = query.ArchetypeChunk.GetEnumerator();
-        var count = 0;
-        try
-        {
-            while (enumerator.MoveNext())
-            {
-                if (count == chunks.Length)
-                {
-                    Array.Resize(ref chunks, Math.Max(4, count * 2));
-                }
+        var (chunks, count) = CollectChunks(query);
+        if (count == 0) return UETasksJobHandle.Completed;
 
-                chunks[count++] = enumerator.Current;
-            }
-        }
-        finally
-        {
-            enumerator.Dispose();
-        }
-
-        if (count == 0)
-        {
-            return UETasksJobHandle.Completed;
-        }
-
-        var actualTaskCount = count;
         var runner = new QueryRunner1<T1>(query.World, chunks, count, lambda);
 
-        if (actualTaskCount == 1)
+        if (count == 1)
         {
             runner.ExecuteTask(0);
             return UETasksJobHandle.Completed;
@@ -109,7 +56,7 @@ public static class UETasksQueryExtensions
         var handle = GCHandle.Alloc(runner);
         var handleId = FTasksQueryImplementation.FTasksQuery_ScheduleBatchImplementation(
             (nint)GCHandle.ToIntPtr(handle),
-            actualTaskCount);
+            count);
 
         if (handleId == 0)
         {
@@ -120,45 +67,18 @@ public static class UETasksQueryExtensions
         return new UETasksJobHandle(handleId, handle);
     }
 
-    public static void ExecuteUeParallel<T1, T2>(
-        this IQuery<T1, T2> query,
-        ForEachEntity<T1, T2> lambda,
-        int taskCount = 0)
+    public static void ExecuteUeParallel<T1, T2>(this IQuery<T1, T2> query, ForEachEntity<T1, T2> lambda)
         where T1 : struct
         where T2 : struct
     {
         if (lambda == null) throw new ArgumentNullException(nameof(lambda));
 
-        var chunkCount = query.ChunkCount;
-        var chunks = new ArchetypeChunk<T1, T2>[Math.Max(4, chunkCount)];
-        var enumerator = query.ArchetypeChunk.GetEnumerator();
-        var count = 0;
-        try
-        {
-            while (enumerator.MoveNext())
-            {
-                if (count == chunks.Length)
-                {
-                    Array.Resize(ref chunks, Math.Max(4, count * 2));
-                }
+        var (chunks, count) = CollectChunks(query);
+        if (count == 0) return;
 
-                chunks[count++] = enumerator.Current;
-            }
-        }
-        finally
-        {
-            enumerator.Dispose();
-        }
-
-        if (count == 0)
-        {
-            return;
-        }
-
-        var actualTaskCount = count;
         var runner = new QueryRunner2<T1, T2>(query.World, chunks, count, lambda);
 
-        if (actualTaskCount == 1)
+        if (count == 1)
         {
             runner.ExecuteTask(0);
             return;
@@ -169,7 +89,7 @@ public static class UETasksQueryExtensions
         {
             FTasksQueryImplementation.FTasksQuery_ExecuteBatchImplementation(
                 (nint)GCHandle.ToIntPtr(handle),
-                actualTaskCount,
+                count,
                 wait: true);
         }
         finally
@@ -178,45 +98,18 @@ public static class UETasksQueryExtensions
         }
     }
 
-    public static UETasksJobHandle ScheduleUeParallel<T1, T2>(
-        this IQuery<T1, T2> query,
-        ForEachEntity<T1, T2> lambda,
-        int taskCount = 0)
+    public static UETasksJobHandle ScheduleUeParallel<T1, T2>(this IQuery<T1, T2> query, ForEachEntity<T1, T2> lambda)
         where T1 : struct
         where T2 : struct
     {
         if (lambda == null) throw new ArgumentNullException(nameof(lambda));
 
-        var chunkCount = query.ChunkCount;
-        var chunks = new ArchetypeChunk<T1, T2>[Math.Max(4, chunkCount)];
-        var enumerator = query.ArchetypeChunk.GetEnumerator();
-        var count = 0;
-        try
-        {
-            while (enumerator.MoveNext())
-            {
-                if (count == chunks.Length)
-                {
-                    Array.Resize(ref chunks, Math.Max(4, count * 2));
-                }
+        var (chunks, count) = CollectChunks(query);
+        if (count == 0) return UETasksJobHandle.Completed;
 
-                chunks[count++] = enumerator.Current;
-            }
-        }
-        finally
-        {
-            enumerator.Dispose();
-        }
-
-        if (count == 0)
-        {
-            return UETasksJobHandle.Completed;
-        }
-
-        var actualTaskCount = count;
         var runner = new QueryRunner2<T1, T2>(query.World, chunks, count, lambda);
 
-        if (actualTaskCount == 1)
+        if (count == 1)
         {
             runner.ExecuteTask(0);
             return UETasksJobHandle.Completed;
@@ -225,7 +118,7 @@ public static class UETasksQueryExtensions
         var handle = GCHandle.Alloc(runner);
         var handleId = FTasksQueryImplementation.FTasksQuery_ScheduleBatchImplementation(
             (nint)GCHandle.ToIntPtr(handle),
-            actualTaskCount);
+            count);
 
         if (handleId == 0)
         {
@@ -234,6 +127,37 @@ public static class UETasksQueryExtensions
         }
 
         return new UETasksJobHandle(handleId, handle);
+    }
+
+    private static (ArchetypeChunk<T1>[] chunks, int count) CollectChunks<T1>(this IQuery<T1> query)
+        where T1 : struct
+    {
+        var chunkCount = query.ChunkCount;
+        var list = new List<ArchetypeChunk<T1>>(chunkCount > 0 ? chunkCount : 0);
+
+        foreach (var chunk in query.ArchetypeChunk)
+        {
+            list.Add(chunk);
+        }
+
+        var chunks = list.ToArray();
+        return (chunks, chunks.Length);
+    }
+
+    private static (ArchetypeChunk<T1, T2>[] chunks, int count) CollectChunks<T1, T2>(this IQuery<T1, T2> query)
+        where T1 : struct
+        where T2 : struct
+    {
+        var chunkCount = query.ChunkCount;
+        var list = new List<ArchetypeChunk<T1, T2>>(chunkCount > 0 ? chunkCount : 0);
+
+        foreach (var chunk in query.ArchetypeChunk)
+        {
+            list.Add(chunk);
+        }
+
+        var chunks = list.ToArray();
+        return (chunks, chunks.Length);
     }
 
     private sealed class QueryRunner1<T1> : IUETasksQueryRunner
@@ -257,10 +181,7 @@ public static class UETasksQueryExtensions
 
         public void ExecuteTask(int taskIndex)
         {
-            if (taskIndex < 0 || taskIndex >= chunkCount)
-            {
-                return;
-            }
+            if (taskIndex < 0 || taskIndex >= chunkCount) return;
 
             var chunk = chunks[taskIndex];
             RunChunk(chunk, 0, chunk.Length);
@@ -301,10 +222,7 @@ public static class UETasksQueryExtensions
 
         public void ExecuteTask(int taskIndex)
         {
-            if (taskIndex < 0 || taskIndex >= chunkCount)
-            {
-                return;
-            }
+            if (taskIndex < 0 || taskIndex >= chunkCount) return;
 
             var chunk = chunks[taskIndex];
             RunChunk(chunk, 0, chunk.Length);

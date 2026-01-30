@@ -26,7 +26,7 @@ namespace Script.Game.StackOBot.UI.MainMenu
         private const int ENTITY_COUNT = 40_000;
         private const int ITERATION = 256;
         private const int WRAM_UP_TIMES = 50;
-        private const int EXECUTE_ROUND = 10;
+        private const int EXECUTE_ROUND = 20;
         public new static UClass StaticClass()
         {
             return StaticClassSingleton ??=
@@ -60,9 +60,15 @@ namespace Script.Game.StackOBot.UI.MainMenu
             var world = new IECSWorld();
             var ueTimes = new List<long>(EXECUTE_ROUND);
             var prTimes = new List<long>(EXECUTE_ROUND);
+            var scheduleTimes = new List<long>(EXECUTE_ROUND);
+            var scheduleCombineTimes = new List<long>(EXECUTE_ROUND);
             CreateTestEntities(world);
             
             var query = world.Query<PGDPosition, PGDRotation>();
+            var queryhealth = world.Query<Health>();
+            var  querymana = world.Query<Mana>();
+            var queryPos = world.Query<PGDPosition>();
+            var queryRot = world.Query<PGDRotation>();
             Console.WriteLine($"chunk count: {query.ArchetypeChunk}");
             // 局部计时函数
             void MeasureUe(List<long> list)
@@ -85,11 +91,79 @@ namespace Script.Game.StackOBot.UI.MainMenu
                 var sw = Stopwatch.StartNew();
                 for (int i = 0; i < ITERATION; i++)
                 {
-                    query.ParallelForEach((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
+                    // query.ParallelForEach((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
+                    // {
+                    //     pos.x += 1;
+                    //     rot.x += 1;
+                    // });
+                    queryPos.ParallelForEach((ref PGDPosition pos, IEntity entity) =>
+                    {
+                        pos.x += 1;
+                    });
+                    queryRot.ParallelForEach((ref PGDRotation rot, IEntity entity) =>
+                    {
+                        rot.x += 1;
+                    });
+                    queryhealth.ParallelForEach((ref Health health, IEntity entity) =>
+                    {
+                        health.HP += 1;
+                    });
+                    querymana.ParallelForEach((ref Mana Component1, IEntity Entity) =>
+                    {
+                        Component1.MP += 1;
+                    });
+                }
+                sw.Stop();
+                list.Add(sw.ElapsedMilliseconds);
+            }
+
+            void MeasureSchedule(List<long> list)
+            {
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < ITERATION; i++)
+                {
+                    var handle = query.ScheduleUeParallel((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
                     {
                         pos.x += 1;
                         rot.x += 1;
                     });
+                    handle.Wait();
+                    handle.Dispose();
+                }
+                sw.Stop();
+                list.Add(sw.ElapsedMilliseconds);
+            }
+
+            void MeasureScheduleCombine(List<long> list)
+            {
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < ITERATION; i++)
+                {
+                    var h1 = queryPos.ScheduleUeParallel((ref PGDPosition pos, IEntity entity) =>
+                    {
+                        pos.x += 1;
+                    });
+                    var h2 = queryRot.ScheduleUeParallel((ref PGDRotation rot, IEntity entity) =>
+                    {
+                        rot.x += 1;
+                    });
+
+                    var h3 = queryhealth.ScheduleUeParallel((ref Health health, IEntity entity) =>
+                    {
+                        health.HP += 1;
+                    });
+                    
+                    var h4 = querymana.ScheduleUeParallel<Mana>((ref Mana Component1, IEntity Entity) =>
+                    {
+                        Component1.MP += 1;
+                    });
+
+                    var combined = UETasksJobHandleUtils.Combine(
+                        h1, h2
+                        , h3, h4
+                        );
+                    // combined.Wait();
+                    combined.Dispose();
                 }
                 sw.Stop();
                 list.Add(sw.ElapsedMilliseconds);
@@ -97,9 +171,6 @@ namespace Script.Game.StackOBot.UI.MainMenu
             
             long Median(List<long> list)
             {
-                // list.Sort();
-                // int mid = list.Count / 2;
-                // return list.Count % 2 == 1 ? list[mid] : (list[mid - 1] + list[mid]) / 2;
                 return list.Sum() / list.Count;
             }
             
@@ -108,33 +179,19 @@ namespace Script.Game.StackOBot.UI.MainMenu
                 bool ab = (round % 2 == 0); // 偶数轮：A->B，奇数轮：B->A
                 if (!ab)
                 {
-                    MeasureUe(ueTimes);
+                    MeasureScheduleCombine(scheduleCombineTimes);
                     MeasurePgd(prTimes);
                 }
                 else
                 {
                     MeasurePgd(prTimes);
-                    MeasureUe(ueTimes);
+                    MeasureScheduleCombine(scheduleCombineTimes);
                 }
             }
-            
-            Console.WriteLine($"ExecuteUeParallel cost: {Median(ueTimes)} ms");
-            Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
-            Console.WriteLine("[ScheduleTest] before schedule");
-            var handle = query.ScheduleUeParallel((ref PGDPosition pos, ref PGDRotation rot, IEntity entity) =>
-            {
-                // 模拟耗时
-                for (int i = 0; i < 100000; i++)
-                {
-                    pos.x += 1;
-                }
-            });
-            Console.WriteLine("[ScheduleTest] after schedule (should be immediate)");
 
-            Console.WriteLine($"[ScheduleTest] IsCompleted: {handle.IsCompleted}");
-            handle.Wait();
-            Console.WriteLine("[ScheduleTest] after Wait (should be later)");
-            handle.Dispose();
+            Console.WriteLine($"ParallelForEach cost: {Median(prTimes)} ms");
+            Console.WriteLine($"ScheduleUeParallel+Combine cost: {Median(scheduleCombineTimes)} ms");
+            Console.WriteLine("[ScheduleTest] before schedule");
         }
 
         private void CreateTestEntities(IECSWorld world)
