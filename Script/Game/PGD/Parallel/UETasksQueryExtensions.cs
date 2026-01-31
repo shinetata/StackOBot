@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Script.Library;
 
@@ -133,15 +132,18 @@ public static class UETasksQueryExtensions
         where T1 : struct
     {
         var chunkCount = query.ChunkCount;
-        var list = new List<ArchetypeChunk<T1>>(chunkCount > 0 ? chunkCount : 0);
-
-        foreach (var chunk in query.ArchetypeChunk)
+        if (chunkCount <= 0)
         {
-            list.Add(chunk);
+            return (Array.Empty<ArchetypeChunk<T1>>(), 0);
         }
 
-        var chunks = list.ToArray();
-        return (chunks, chunks.Length);
+        var chunks = new ArchetypeChunk<T1>[chunkCount];
+        var index = 0;
+        foreach (var chunk in query.ArchetypeChunk)
+        {
+            chunks[index++] = chunk;
+        }
+        return (chunks, chunkCount);
     }
 
     private static (ArchetypeChunk<T1, T2>[] chunks, int count) CollectChunks<T1, T2>(this IQuery<T1, T2> query)
@@ -149,15 +151,18 @@ public static class UETasksQueryExtensions
         where T2 : struct
     {
         var chunkCount = query.ChunkCount;
-        var list = new List<ArchetypeChunk<T1, T2>>(chunkCount > 0 ? chunkCount : 0);
-
-        foreach (var chunk in query.ArchetypeChunk)
+        if (chunkCount <= 0)
         {
-            list.Add(chunk);
+            return (Array.Empty<ArchetypeChunk<T1, T2>>(), 0);
         }
 
-        var chunks = list.ToArray();
-        return (chunks, chunks.Length);
+        var chunks = new ArchetypeChunk<T1, T2>[chunkCount];
+        var index = 0;
+        foreach (var chunk in query.ArchetypeChunk)
+        {
+            chunks[index++] = chunk;
+        }
+        return (chunks, chunkCount);
     }
 
     private sealed class QueryRunner1<T1> : IUETasksQueryRunner

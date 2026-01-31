@@ -68,3 +68,69 @@ PGD集成UE Tasks并行化能力本质是在UE Tasks中执行开发者预定义�
 **Combine正确用法**
 - 必须传入仍然有效的 handle
 - Combine 后只使用返回的新 handle，原 handle 进入“已转移/不可用”状态
+
+### 性能测试
+
+#### 测试环境与参数
+
+| 参数 | 值 | 说明 |
+|-----|------|------|
+| ENTITY_COUNT | 40,000 | 单种组件组合的实体数量 |
+| ITERATION | 16 | 性能测试迭代次数 |
+| EXECUTE_ROUND | 20 | 执行轮数（用于取平均值） |
+| WORK | 128 | 单元素计算负载（模拟计算循环次数） |
+
+#### 实体构建策略
+
+测试使用 7 种组件组合类型，每种组合创建 `ENTITY_COUNT`（40,000）个实体，总计约 280,000 个实体：
+
+```cs
+// 1. PGDPosition + PGDRotation
+// 2. PGDPosition + PGDRotation + Health
+// 3. PGDPosition + PGDRotation + Mana
+// 4. PGDPosition + PGDRotation + Mana + Health
+// 5. PGDPosition + PGDRotation + Mana + PGDScale
+// 6. PGDPosition + PGDRotation + Mana + PGDTransform
+// 7. PGDPosition + PGDRotation + Mana + Health + PGDScale
+```
+
+这种多样化组合旨在模拟真实场景中 Entity 组件构成的差异性，测试 Query 在多 Archetype 下的遍历与调度性能。
+
+#### 测试场景
+
+##### ScheduleUeParallel + 多Query并行 + 逐个 Dispose
+
+```cs
+var handles = new List<UETasksJobHandle>();
+var h1 = queryPos.ScheduleUeParallel((ref PGDPosition pos, IEntity entity) =>
+{
+    float v = pos.x;
+    for (int k = 0; k < WORK; k++)
+    {
+        v = v * 1.001f + 0.1f;
+    }
+    pos.x = v;
+});
+var h2 = queryRot.ScheduleUeParallel((ref PGDRotation rot, IEntity entity) => { ... });
+var h3 = queryhealth.ScheduleUeParallel((ref Health health, IEntity entity) => { ... });
+var h4 = querymana.ScheduleUeParallel((ref Mana mana, IEntity entity) => { ... });
+
+// 逐个 Dispose
+for (int j = 0; j < handles.Count; j++)
+{
+    handles[j].Dispose();
+}
+```
+
+##### ScheduleParallel对比测试
+
+```cs
+var h1 = queryPos.ScheduleParallel((ref PGDPosition pos, IEntity entity) => { ... });
+ScheduleParallelHandleStore.Add(h1);
+// ... h2, h3, h4
+ScheduleParallelHandleStore.CompleteAll();
+```
+
+#### 测试结论
+
+在中高负载的场景下，UE Tasks的优势非常明显。而在轻负载时，PGD内部的并行能力因调度路径更轻，整体效率会更高。
